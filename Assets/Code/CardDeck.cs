@@ -37,7 +37,7 @@ public class Card {
     public Card(CardSuit suit, CardValue value) {
         Suit = suit;
         Value = value;
-        ResourcePath = $"{suit} {value}";
+        ResourcePath = $"{suit} {value.ToSymbol()}";
     }
 
     public string GetSymbol() => Value.ToSymbol();
