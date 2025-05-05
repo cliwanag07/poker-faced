@@ -3,10 +3,9 @@ using UnityEngine;
 
 public class TexasHoldemManager : MonoBehaviour {
     private List<Card> communityCards;
-    private List<Card> playerHand;
-    private List<Card> computerHand;
+    private List<Player> players;
 
-    private readonly int STARTING_MONEY = 1000;
+    private const int STARTING_MONEY = 1000;
     
     private int pot;
     private int playerBet;
@@ -15,19 +14,39 @@ public class TexasHoldemManager : MonoBehaviour {
     private int computerBalance;
     
     public TexasHoldemManager() {
-        communityCards = new List<Card>();
-        playerHand = new List<Card>();
-        computerHand = new List<Card>();
+        
+    }
+
+    public void CreateRoom(int players, int startingCash = STARTING_MONEY) {
+        for (int i = 0; i < players; i++) {
+            this.players.Add(new Player(startingCash));
+        }
+    }
+
+    public void StartNewRound() {
+        
+    }
+
+    public void ResetRoom() {
+        communityCards.Clear();
         playerBalance = STARTING_MONEY;
         computerBalance = STARTING_MONEY;
     }
+}
 
-    public void ResetRound() {
-        communityCards.Clear();
-        playerHand.Clear();
-        computerHand.Clear();
-        playerBalance = STARTING_MONEY;
-        computerBalance = STARTING_MONEY;
+public class Player {
+    private List<Card> hand;
+    private int cash;
+
+    public Player(int startingCash) {
+        cash = startingCash;
+    }
+
+    public int Bet(int value) {
+        if (value > cash) return 0;
+
+        cash -= value;
+        return value;
     }
 }
 

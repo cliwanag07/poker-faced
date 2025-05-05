@@ -43,6 +43,28 @@ public class Card {
     public string GetSymbol() => Value.ToSymbol();
     
     public Sprite Sprite => Resources.Load<Sprite>(ResourcePath);
+    
+    // custom format for PokerHandEvaluator
+    public string[] ToCustomFormat() {
+        int valueAsInt = Value switch {
+            CardValue.Jack => 11,
+            CardValue.Queen => 12,
+            CardValue.King => 13,
+            CardValue.Ace => 14,
+            _ => (int)Value + 1 // enum starts at 0
+        };
+
+        string suitString = Suit switch {
+            CardSuit.Spades => "Spade",
+            CardSuit.Hearts => "Heart",
+            CardSuit.Diamonds => "Diamond",
+            CardSuit.Clubs => "Club",
+            _ => "Unknown"
+        };
+
+        return new string[] { valueAsInt.ToString(), suitString };
+    }
+
 }
 
 public enum CardSuit {
