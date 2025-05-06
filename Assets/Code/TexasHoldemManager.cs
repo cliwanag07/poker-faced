@@ -19,8 +19,14 @@ public class TexasHoldemManager : MonoBehaviour {
     private int startingPlayer = 0;
     private int currentPlayer = 0;
     private int currentBet;
+
+    private string log;
     
     private bool awaitingPlayerAction = false;
+    
+    private const string PLAYER1_COLOR = "blue"; // Blue
+    private const string PLAYER2_COLOR = "red"; // Red
+    private const string SYSTEM_COLOR = "#CCCCCC";  // Gray
 
     public event Action<int> OnAwaitingNextAction;
 
@@ -34,6 +40,8 @@ public class TexasHoldemManager : MonoBehaviour {
 
     public List<Player> Players => players;
     public int Pot => pot;
+    public string Log => log;
+    public Phase Phase => phase;
 
     public void CreateRoom(int smallBlind = STARTING_MONEY / 100, int startingCash = STARTING_MONEY) {
         ResetRoom();
@@ -46,12 +54,13 @@ public class TexasHoldemManager : MonoBehaviour {
         this.smallBlind = smallBlind;
         players.Add(new Player(startingCash));
         players.Add(new Player(startingCash));
-        startingPlayer = 0;
+        startingPlayer = 1;
     }
 
     public void StartNewRound() {
+        AppendToLog($"<color={SYSTEM_COLOR}><b>-- New Round Started --</b></color>");
+        
         communityCards.Clear();
-
         foreach (Player player in players) {
             player.ResetForRound();
         }
@@ -72,6 +81,10 @@ public class TexasHoldemManager : MonoBehaviour {
         CollectBlinds();
 
         AwaitAction();
+    }
+    
+    private void AppendToLog(string message) {
+        log += $"{message}\n";
     }
 
     private void DealPlayers() {
@@ -101,7 +114,8 @@ public class TexasHoldemManager : MonoBehaviour {
             currentBet = actualBet;
         }
 
-        Debug.Log($"{player} bet {actualBet}. Stack: {player.GetStack()}, All-In: {player.GetIsAllIn()}");
+        string color = players.IndexOf(player) == 0 ? PLAYER1_COLOR : PLAYER2_COLOR;
+        AppendToLog($"<color={color}>Player {players.IndexOf(player) + 1}</color>: Bet {actualBet}");
     }
     
     public void AwaitAction() {
@@ -110,21 +124,27 @@ public class TexasHoldemManager : MonoBehaviour {
     }
     
     public void HandlePlayerAction(Action action, int raiseAmount = 0) {
+        if (phase == Phase.EndRound) return;
         if (!awaitingPlayerAction) return;
 
         Player player = GetCurrentPlayer();
         Player opponent = GetOtherPlayer();
+        int index = players.IndexOf(player);
+        string color = index == 0 ? PLAYER1_COLOR : PLAYER2_COLOR;
+        string label = $"<color={color}>Player {index + 1}</color>";
 
         player.SetAction(action);
         awaitingPlayerAction = false;
 
         switch (action) {
             case Action.Fold:
-                EndRound(opponent); // other player wins
+                AppendToLog(label + ": Folds");
+                EndRound(opponent);
                 break;
 
             case Action.Check:
                 if (player.GetCurrentBet() == opponent.GetCurrentBet()) {
+                    AppendToLog(label + ": Checks");
                     ProceedOrNextPlayer();
                 } else {
                     Debug.LogWarning("Cannot check: unmatched bets");
@@ -132,13 +152,26 @@ public class TexasHoldemManager : MonoBehaviour {
                 }
                 break;
 
+            case Action.Call:
+                int callAmount = opponent.GetCurrentBet() - player.GetCurrentBet();
+                if (callAmount > 0 && callAmount <= player.GetStack()) {
+                    var actualCall = player.Bet(player.GetCurrentBet() + callAmount);
+                    pot += actualCall;
+                    AppendToLog(label + $": Calls {actualCall}");
+                    ProceedOrNextPlayer();
+                } else {
+                    Debug.LogWarning("Invalid call amount");
+                    AwaitAction();
+                }
+                break;
+
             case Action.Bet:
-                if (raiseAmount > 0 && raiseAmount <= player.GetStack()) {
+                if (raiseAmount > 0 && raiseAmount > currentBet && raiseAmount <= player.GetStack()) {
                     Bet(raiseAmount, player);
                     SetNextPlayer();
                     AwaitAction();
                 } else {
-                    Debug.LogWarning("Invalid raise amount");
+                    Debug.LogWarning("Invalid bet amount");
                     AwaitAction();
                 }
                 break;
@@ -148,6 +181,7 @@ public class TexasHoldemManager : MonoBehaviour {
                 AwaitAction();
                 break;
         }
+
     }
 
     private void ProceedOrNextPlayer() {
@@ -182,14 +216,17 @@ public class TexasHoldemManager : MonoBehaviour {
         switch (phase) {
             case Phase.Preflop:
                 phase = Phase.Flop;
+                AppendToLog($"<color={SYSTEM_COLOR}><b>Dealing Flop</b></color>");
                 DealFlop();
                 break;
             case Phase.Flop:
                 phase = Phase.Turn;
+                AppendToLog($"<color={SYSTEM_COLOR}><b>Dealing Turn</b></color>");
                 DealTurn();
                 break;
             case Phase.Turn:
                 phase = Phase.River;
+                AppendToLog($"<color={SYSTEM_COLOR}><b>Dealing River</b></color>");
                 DealRiver();
                 break;
             case Phase.River:
@@ -223,8 +260,15 @@ public class TexasHoldemManager : MonoBehaviour {
 
     private void EndRound(Player winner) {
         winner.ReceiveWinnings(pot);
-        Debug.Log($"Player {players.IndexOf(winner)} wins the pot of {pot}");
-        ResetRound();
+        
+        int winnerIndex = players.IndexOf(winner);
+        string winnerColor = winnerIndex == 0 ? PLAYER1_COLOR : PLAYER2_COLOR;
+        AppendToLog($"<color={winnerColor}><b>Player {winnerIndex + 1} wins the pot of {pot}</b></color>");
+        AppendToLog($"<color={SYSTEM_COLOR}>-- Round Ended --</color>");
+        
+        // ResetRound();
+        phase = Phase.EndRound;
+        AwaitAction();
     }
     
     private void EvaluateHands() {
@@ -239,14 +283,34 @@ public class TexasHoldemManager : MonoBehaviour {
     private void EndRoundBasedOnHands() {
         Player winner = DetermineWinner();
         winner.ReceiveWinnings(pot);
-        Debug.Log($"Player {players.IndexOf(winner)} wins the pot of {pot}");
-        ResetRound();
+        
+        int winnerIndex = players.IndexOf(winner);
+        string winnerColor = winnerIndex == 0 ? PLAYER1_COLOR : PLAYER2_COLOR;
+        AppendToLog($"<color={winnerColor}><b>Player {winnerIndex + 1} wins with {players[winnerIndex].GetHandRank().RankName}</b></color>");
+        
+        var cardGroups = players[winnerIndex].GetHandRank().Cards; // string[][]
+        string cardLine = $"<color={winnerColor}><b>";
+        foreach (var group in cardGroups)
+        {
+            cardLine += "[";
+            cardLine += string.Join(" ", group); // join inner array
+            cardLine += "] ";
+        }
+        cardLine = cardLine.TrimEnd() + "</b></color>";
+        AppendToLog(cardLine);
+
+        AppendToLog($"<color={winnerColor}><b>Player {winnerIndex + 1} wins the pot of {pot}</b></color>");
+        AppendToLog($"<color={SYSTEM_COLOR}>-- Round Ended --</color>");
+        
+        // ResetRound();
+        phase = Phase.EndRound;
+        AwaitAction();
     }
     
     private Player DetermineWinner() {
         // Assuming you have a method to determine the winning player by hand ranking
-        double player1Rank = players[0].GetHandRank();
-        double player2Rank = players[1].GetHandRank();
+        double player1Rank = players[0].GetHandRank().Rank;
+        double player2Rank = players[1].GetHandRank().Rank;
 
         if (player1Rank > player2Rank) {
             return players[0];
@@ -259,7 +323,7 @@ public class TexasHoldemManager : MonoBehaviour {
         }
     }
 
-    private void ResetRound() {
+    public void ResetRound() {
         pot = 0;
         foreach (Player p in players) {
             p.SetAction(Action.None);
@@ -276,7 +340,7 @@ public class TexasHoldemManager : MonoBehaviour {
     private Player GetCurrentPlayer() => players[currentPlayer];
     private Player GetOtherPlayer() => players[1 - currentPlayer];
     
-    private int GetCurrentPlayerIndex() => currentPlayer;
+    public int GetCurrentPlayerIndex() => currentPlayer;
 
     public void ResetRoom() {
         players.Clear();
@@ -291,7 +355,7 @@ public class Player {
     private int currentBet;
     private bool allIn;
     private Action action;
-    private double handRank;
+    private HandValue.HandRank handRank;
 
     public bool IsSmallBlind { get; set; }
     public bool IsBigBlind { get; set; }
@@ -343,22 +407,22 @@ public class Player {
         handRank = EvaluatePokerHand(allCards);
     }
 
-    public double GetHandRank() {
+    public HandValue.HandRank GetHandRank() {
         return handRank;
     }
 
-    private double EvaluatePokerHand(List<Card> cards) {
+    private HandValue.HandRank EvaluatePokerHand(List<Card> cards) {
         List<string[]> cardsOnTable = cards.Select(card => card.ToCustomFormat()).ToList();
 
-        return HandValue.EvaluateRankByHighestCards(cardsOnTable);
+        return HandValue.GetPlayerHandRank(cardsOnTable);
     }
 }
 
 
 public enum Action {
-    None, Check, Bet, Fold
+    None, Check, Bet, Fold, Call
 }
 
 public enum Phase {
-    Preflop, Flop, Turn, River
+    Preflop, Flop, Turn, River, EndRound
 }

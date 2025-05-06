@@ -7,6 +7,7 @@ public class GameManager : MonoBehaviour {
     
     private const int PLAYER_INDEX = 0;
     private const int COMPUTER_INDEX = 1;
+    private bool showComputerHand = false;
 
     private void Start() {
         texasHoldemUIManager.OnPlayerAction += HandlePlayerAction;
@@ -16,6 +17,15 @@ public class GameManager : MonoBehaviour {
         texasHoldemManager.StartNewRound();
         UpdateUI();
     }
+
+    private void Update() {
+        if (Input.GetKeyDown(KeyCode.Space)) {
+            if (texasHoldemManager.Phase == Phase.EndRound)
+                texasHoldemManager.ResetRound();
+        }
+
+        showComputerHand = texasHoldemManager.Phase == Phase.EndRound;
+    }
     
     private void HandlePlayerAction(Action action, int raiseAmount = 0) {
         texasHoldemManager.HandlePlayerAction(action, raiseAmount);
@@ -23,6 +33,8 @@ public class GameManager : MonoBehaviour {
 
     private void HandleAwaitingNextAction(int currentPlayerIndex) {
         UpdateUI();
+        if (texasHoldemManager.Phase == Phase.EndRound) return;
+        SetButtons();
         if (currentPlayerIndex == PLAYER_INDEX) {
             Debug.Log("Waiting for action from Player");
         }
@@ -45,28 +57,49 @@ public class GameManager : MonoBehaviour {
     }
     
     private void SetButtons() {
-        
+        #if UNITY_EDITOR
+        if (texasHoldemManager.GetCurrentPlayerIndex() == PLAYER_INDEX) 
+            texasHoldemUIManager.SetButtons(true, false);
+        else 
+            texasHoldemUIManager.SetButtons(false, true);
+        #else
+        if (texasHoldemManager.GetCurrentPlayerIndex() == PLAYER_INDEX) 
+            texasHoldemUIManager.SetButtons(true);
+        else 
+            texasHoldemUIManager.SetButtons(fals);
+        #endif
     }
     
     private void UpdateUI() {
-        texasHoldemUIManager.UpdateUI(new UIUpdateInfo() {
+        texasHoldemUIManager.UpdateUI(new UIUpdateInfo{
             pot = texasHoldemManager.Pot,
             playerStack = texasHoldemManager.Players[PLAYER_INDEX].GetStack(),
             computerStack = texasHoldemManager.Players[COMPUTER_INDEX].GetStack(),
-            revealComputerHand = true, // update later
+            playerCurrentBet = texasHoldemManager.Players[PLAYER_INDEX].GetCurrentBet(),
+            computerCurrentBet = texasHoldemManager.Players[COMPUTER_INDEX].GetCurrentBet(),
+            #if UNITY_EDITOR
+            revealComputerHand = true,
+            #else
+            revealComputerHand = showComputerHand,
+            #endif
             playerHand = texasHoldemManager.Players[PLAYER_INDEX].GetHand(),
             computerHand = texasHoldemManager.Players[COMPUTER_INDEX].GetHand(),
             communityCards = texasHoldemManager.CommunityCards,
+            log = texasHoldemManager.Log,
         });
+        texasHoldemUIManager.SetCurrentAction(texasHoldemManager.GetCurrentPlayerIndex() == PLAYER_INDEX ? "YOU" : "COMPUTER");
     }
 
     public class UIUpdateInfo {
         public int pot { get; set; }
         public int playerStack { get; set; }
         public int computerStack { get; set; }
+        public int playerCurrentBet { get; set; }
+        public int computerCurrentBet { get; set; }
         public bool revealComputerHand { get; set; }
         public List<Card> playerHand { get; set; }
         public List<Card> computerHand { get; set; }
         public List<Card> communityCards { get; set; }
+        public string log { get; set; }
     }
 }
