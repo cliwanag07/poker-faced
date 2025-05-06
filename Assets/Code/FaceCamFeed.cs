@@ -58,4 +58,21 @@ public class FaceCamSquareCrop : MonoBehaviour
         if (webCamTexture != null && webCamTexture.isPlaying)
             webCamTexture.Stop();
     }
+    
+    public Texture2D GetCroppedSquareTexture()
+    {
+        int width = webCamTexture.width;
+        int height = webCamTexture.height;
+        int squareSize = Mathf.Min(width, height);
+
+        int x = (width - squareSize) / 2;
+        int y = (height - squareSize) / 2;
+
+        Texture2D squareTex = new Texture2D(squareSize, squareSize, TextureFormat.RGB24, false);
+        squareTex.SetPixels(webCamTexture.GetPixels(x, y, squareSize, squareSize));
+        squareTex.Apply();
+
+        return squareTex;
+    }
+
 }
