@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour {
     private void Start() {
         texasHoldemUIManager.OnPlayerAction += HandlePlayerAction;
         texasHoldemManager.OnAwaitingNextAction += HandleAwaitingNextAction;
+        texasHoldemManager.OnUpdateUI += UpdateUI;
         
         texasHoldemManager.CreateRoom();
         texasHoldemManager.StartNewRound();

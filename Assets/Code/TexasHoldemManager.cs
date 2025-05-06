@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -20,6 +21,8 @@ public class TexasHoldemManager : MonoBehaviour {
     private int currentPlayer = 0;
     private int currentBet;
 
+    private float delay = 1.0f;
+
     private string log;
     
     private bool awaitingPlayerAction = false;
@@ -29,6 +32,7 @@ public class TexasHoldemManager : MonoBehaviour {
     private const string SYSTEM_COLOR = "#CCCCCC";  // Gray
 
     public event Action<int> OnAwaitingNextAction;
+    public event System.Action OnUpdateUI;
 
     private void Awake() {
         communityCards = new List<Card>();
@@ -156,34 +160,32 @@ public class TexasHoldemManager : MonoBehaviour {
                 int callAmount = opponent.GetCurrentBet() - player.GetCurrentBet();
                 if (callAmount > 0) {
                     if (callAmount >= player.GetStack()) {
+                        // refund side pot amount to opponent
+                        var sidePot = callAmount - player.GetStack();
+                        pot -= sidePot;
+                        opponent.AddToStack(sidePot);
+                        opponent.AddToBetAmount(-sidePot);
                         // player goes all-in
                         var allInAmount = player.Bet(player.GetStack());
                         pot += allInAmount;
+                        player.SetIsAllIn(true);
                         AppendToLog(label + $": Goes all-in with {allInAmount}");
                     } else {
                         var actualCall = player.Bet(player.GetCurrentBet() + callAmount);
                         pot += actualCall;
                         AppendToLog(label + $": Calls {actualCall}");
                     }
-                    ProceedOrNextPlayer();
+                    if (AnyPlayerAllIn()) {
+                        // Auto-advance through remaining phases
+                        StartCoroutine(AutoAdvanceToShowdown());
+                    } else {
+                        ProceedOrNextPlayer();
+                    }
                 } else {
                     Debug.LogWarning("Invalid call amount");
                     AwaitAction();
                 }
                 break;
-
-            // case Action.Call:
-            //     int callAmount = opponent.GetCurrentBet() - player.GetCurrentBet();
-            //     if (callAmount > 0 && callAmount <= player.GetStack()) {
-            //         var actualCall = player.Bet(player.GetCurrentBet() + callAmount);
-            //         pot += actualCall;
-            //         AppendToLog(label + $": Calls {actualCall}");
-            //         ProceedOrNextPlayer();
-            //     } else {
-            //         Debug.LogWarning("Invalid call amount");
-            //         AwaitAction();
-            //     }
-            //     break;
 
             case Action.Bet:
                 if (raiseAmount > 0 && raiseAmount > currentBet && raiseAmount <= player.GetStack()) {
@@ -217,37 +219,57 @@ public class TexasHoldemManager : MonoBehaviour {
             }
         }
     }
+    
+    private IEnumerator AutoAdvanceToShowdown() {
+        yield return new WaitForSeconds(delay); // delay for pacing
+
+        while (phase != Phase.River) {
+            AdvancePhase();
+            yield return new WaitForSeconds(delay);
+        }
+
+        // Final phase is River, trigger hand evaluation
+        EvaluateHands();
+        EndRoundBasedOnHands();
+    }
+    
+    private bool AnyPlayerAllIn() {
+        return players.Any(p => p.GetIsAllIn());
+    }
+
 
     private bool BothPlayersHaveMatchedBets() {
         return players[0].GetCurrentBet() == players[1].GetCurrentBet();
     }
 
-    public void AdvancePhase() {
+    private void AdvancePhase()
+    {
         // Reset round state for the new phase
-        foreach (var player in players) {
+        foreach (var player in players)
+        {
             player.ResetCurrentBet();
             player.SetAction(Action.None);
         }
 
         currentBet = 0;
         currentPlayer = startingPlayer;
-        
-        // Transition between phases (Flop -> Turn -> River)
-        switch (phase) {
+
+        switch (phase)
+        {
             case Phase.Preflop:
                 phase = Phase.Flop;
                 AppendToLog($"<color={SYSTEM_COLOR}><b>Dealing Flop</b></color>");
-                DealFlop();
+                StartCoroutine(DealFlop());
                 break;
             case Phase.Flop:
                 phase = Phase.Turn;
                 AppendToLog($"<color={SYSTEM_COLOR}><b>Dealing Turn</b></color>");
-                DealTurn();
+                StartCoroutine(DealTurn());
                 break;
             case Phase.Turn:
                 phase = Phase.River;
                 AppendToLog($"<color={SYSTEM_COLOR}><b>Dealing River</b></color>");
-                DealRiver();
+                StartCoroutine(DealRiver());
                 break;
             case Phase.River:
                 EvaluateHands();
@@ -257,26 +279,41 @@ public class TexasHoldemManager : MonoBehaviour {
                 Debug.LogError("Unknown phase");
                 break;
         }
-        
-        AwaitAction();
     }
     
-    private void DealFlop() {
+    private IEnumerator DealFlop()
+    {
         Debug.Log("Dealing Flop...");
+        yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
+        OnUpdateUI?.Invoke();
+        yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
+        OnUpdateUI?.Invoke();
+        yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
+
+        AwaitAction();
     }
 
-    private void DealTurn() {
+    private IEnumerator DealTurn()
+    {
         Debug.Log("Dealing Turn...");
+        yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
+
+        AwaitAction();
     }
 
-    private void DealRiver() {
+    private IEnumerator DealRiver()
+    {
         Debug.Log("Dealing River...");
+        yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
+
+        AwaitAction();
     }
+
 
     private void EndRound(Player winner) {
         winner.ReceiveWinnings(pot);
@@ -416,6 +453,14 @@ public class Player {
 
     public void ResetCurrentBet() {
         currentBet = 0;
+    }
+
+    public void AddToStack(int amount) {
+        stack += amount;
+    }
+
+    public void AddToBetAmount(int amount) {
+        currentBet += amount;
     }
     
     public void EvaluateHand(List<Card> communityCards) {
