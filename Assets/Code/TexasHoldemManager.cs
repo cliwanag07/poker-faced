@@ -8,16 +8,20 @@ public class TexasHoldemManager : MonoBehaviour {
     private const int STARTING_MONEY = 1000;
     
     private int pot;
-    private int playerBet;
-    private int computerBet;
-    private int playerBalance;
-    private int computerBalance;
+    private int smallBlind;
+    
     
     public TexasHoldemManager() {
         
     }
 
-    public void CreateRoom(int players, int startingCash = STARTING_MONEY) {
+    public void CreateRoom(int players, int smallBlind, int startingCash = STARTING_MONEY) {
+        if (smallBlind >= startingCash / 2) {
+            Debug.LogError("small blind cannot be larger than half of starting cash");
+            return;
+        }
+
+        this.smallBlind = smallBlind;
         for (int i = 0; i < players; i++) {
             this.players.Add(new Player(startingCash));
         }
@@ -29,23 +33,38 @@ public class TexasHoldemManager : MonoBehaviour {
 
     public void ResetRoom() {
         communityCards.Clear();
-        playerBalance = STARTING_MONEY;
-        computerBalance = STARTING_MONEY;
+        foreach (Player player in this.players) {
+            player.GetHand().Clear();
+        }
     }
 }
 
 public class Player {
     private List<Card> hand;
-    private int cash;
+    private int stack;
+    private int currentBet;
 
     public Player(int startingCash) {
-        cash = startingCash;
+        stack = startingCash;
+    }
+
+    public List<Card> GetHand() {
+        return hand;
+    }
+
+    public int GetStack() {
+        return stack;
+    }
+
+    public int GetCurrentBet() {
+        return currentBet;
     }
 
     public int Bet(int value) {
-        if (value > cash) return 0;
+        if (value > stack) return 0;
 
-        cash -= value;
+        currentBet = value;
+        stack -= value;
         return value;
     }
 }
