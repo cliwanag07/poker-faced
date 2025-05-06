@@ -151,19 +151,39 @@ public class TexasHoldemManager : MonoBehaviour {
                     AwaitAction();
                 }
                 break;
-
+            
             case Action.Call:
                 int callAmount = opponent.GetCurrentBet() - player.GetCurrentBet();
-                if (callAmount > 0 && callAmount <= player.GetStack()) {
-                    var actualCall = player.Bet(player.GetCurrentBet() + callAmount);
-                    pot += actualCall;
-                    AppendToLog(label + $": Calls {actualCall}");
+                if (callAmount > 0) {
+                    if (callAmount >= player.GetStack()) {
+                        // player goes all-in
+                        var allInAmount = player.Bet(player.GetStack());
+                        pot += allInAmount;
+                        AppendToLog(label + $": Goes all-in with {allInAmount}");
+                    } else {
+                        var actualCall = player.Bet(player.GetCurrentBet() + callAmount);
+                        pot += actualCall;
+                        AppendToLog(label + $": Calls {actualCall}");
+                    }
                     ProceedOrNextPlayer();
                 } else {
                     Debug.LogWarning("Invalid call amount");
                     AwaitAction();
                 }
                 break;
+
+            // case Action.Call:
+            //     int callAmount = opponent.GetCurrentBet() - player.GetCurrentBet();
+            //     if (callAmount > 0 && callAmount <= player.GetStack()) {
+            //         var actualCall = player.Bet(player.GetCurrentBet() + callAmount);
+            //         pot += actualCall;
+            //         AppendToLog(label + $": Calls {actualCall}");
+            //         ProceedOrNextPlayer();
+            //     } else {
+            //         Debug.LogWarning("Invalid call amount");
+            //         AwaitAction();
+            //     }
+            //     break;
 
             case Action.Bet:
                 if (raiseAmount > 0 && raiseAmount > currentBet && raiseAmount <= player.GetStack()) {
