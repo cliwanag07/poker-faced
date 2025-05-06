@@ -119,7 +119,9 @@ public class TexasHoldemManager : MonoBehaviour {
         }
 
         string color = players.IndexOf(player) == 0 ? PLAYER1_COLOR : PLAYER2_COLOR;
-        AppendToLog($"<color={color}>Player {players.IndexOf(player) + 1}</color>: Bet {actualBet}");
+        AppendToLog(player.GetIsAllIn()
+            ? $"<color={color}>Player {players.IndexOf(player) + 1}</color>: Goes all in with {actualBet}"
+            : $"<color={color}>Player {players.IndexOf(player) + 1}</color>: Bet {actualBet}");
     }
     
     public void AwaitAction() {
@@ -150,6 +152,9 @@ public class TexasHoldemManager : MonoBehaviour {
                 if (player.GetCurrentBet() == opponent.GetCurrentBet()) {
                     AppendToLog(label + ": Checks");
                     ProceedOrNextPlayer();
+                } else if (AnyPlayerAllIn()) {
+                    Debug.LogWarning("Can only fold or call when opponent is all in");
+                    AwaitAction();
                 } else {
                     Debug.LogWarning("Cannot check: unmatched bets");
                     AwaitAction();
@@ -159,27 +164,23 @@ public class TexasHoldemManager : MonoBehaviour {
             case Action.Call:
                 int callAmount = opponent.GetCurrentBet() - player.GetCurrentBet();
                 if (callAmount > 0) {
-                    if (callAmount >= player.GetStack()) {
-                        // refund side pot amount to opponent
-                        var sidePot = callAmount - player.GetStack();
-                        pot -= sidePot;
-                        opponent.AddToStack(sidePot);
-                        opponent.AddToBetAmount(-sidePot);
-                        // player goes all-in
-                        var allInAmount = player.Bet(player.GetStack());
-                        pot += allInAmount;
-                        player.SetIsAllIn(true);
-                        AppendToLog(label + $": Goes all-in with {allInAmount}");
-                    } else {
-                        var actualCall = player.Bet(player.GetCurrentBet() + callAmount);
+                    var actualCall = player.Bet(callAmount);
+                    if (opponent.GetIsAllIn()) {
+                        StartCoroutine(AutoAdvanceToShowdown());
+                    } else if (player.GetIsAllIn()) {
+                        AppendToLog(label + $": Goes all-in with {actualCall}");
+                        // refund side pot if applicable
+                        if (opponent.GetCurrentBet() - actualCall > 0) {
+                            opponent.AddToStack(opponent.GetCurrentBet() - actualCall);
+                            opponent.AddToBetAmount(-(opponent.GetCurrentBet() - actualCall));
+                        }
                         pot += actualCall;
-                        AppendToLog(label + $": Calls {actualCall}");
-                    }
-                    if (AnyPlayerAllIn()) {
-                        // Auto-advance through remaining phases
                         StartCoroutine(AutoAdvanceToShowdown());
                     } else {
-                        ProceedOrNextPlayer();
+                        pot += actualCall;
+                        AppendToLog(label + $": Calls with {actualCall}");
+                        if (phase == Phase.Preflop) ProceedOrNextPlayer();
+                        else AdvancePhase();
                     }
                 } else {
                     Debug.LogWarning("Invalid call amount");
@@ -188,10 +189,18 @@ public class TexasHoldemManager : MonoBehaviour {
                 break;
 
             case Action.Bet:
-                if (raiseAmount > 0 && raiseAmount > currentBet && raiseAmount <= player.GetStack()) {
-                    Bet(raiseAmount, player);
-                    SetNextPlayer();
+                if (AnyPlayerAllIn()) {
+                    Debug.LogWarning("Can only fold or call when opponent is all in");
                     AwaitAction();
+                } else if (raiseAmount > 0 && raiseAmount <= player.GetStack()) {
+                    Bet(raiseAmount, player);
+                    // if (player.GetIsAllIn()) {
+                    //     StartCoroutine(AutoAdvanceToShowdown());
+                    // }
+                    // else {
+                        SetNextPlayer();
+                        AwaitAction();
+                    // }
                 } else {
                     Debug.LogWarning("Invalid bet amount");
                     AwaitAction();
@@ -432,7 +441,7 @@ public class Player {
 
     public int Bet(int value) {
         int actualBet = Mathf.Min(value, stack);
-        currentBet = actualBet;
+        currentBet += actualBet;
         stack -= actualBet;
         allIn = stack == 0;
         return actualBet;
