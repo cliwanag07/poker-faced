@@ -6,6 +6,7 @@ public class CardDeck {
     private List<Card> cards;
 
     public CardDeck() {
+        cards = new List<Card>();
         ResetDeck();
     }
 
@@ -37,7 +38,7 @@ public class Card {
     public Card(CardSuit suit, CardValue value) {
         Suit = suit;
         Value = value;
-        ResourcePath = $"{suit} {value.ToSymbol()}";
+        ResourcePath = $"Cards/{suit} {value.ToSymbol()}";
     }
 
     public string GetSymbol() => Value.ToSymbol();

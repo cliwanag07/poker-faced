@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -21,11 +22,18 @@ public class TexasHoldemManager : MonoBehaviour {
     
     private bool awaitingPlayerAction = false;
 
+    public event Action<int> OnAwaitingNextAction;
+
     private void Awake() {
         communityCards = new List<Card>();
         players = new List<Player>();
         cardDeck = new CardDeck();
     }
+    
+    public List<Card> CommunityCards => communityCards;
+
+    public List<Player> Players => players;
+    public int Pot => pot;
 
     public void CreateRoom(int smallBlind = STARTING_MONEY / 100, int startingCash = STARTING_MONEY) {
         ResetRoom();
@@ -63,7 +71,7 @@ public class TexasHoldemManager : MonoBehaviour {
         DealPlayers();
         CollectBlinds();
 
-        // Await action...
+        AwaitAction();
     }
 
     private void DealPlayers() {
@@ -98,7 +106,7 @@ public class TexasHoldemManager : MonoBehaviour {
     
     public void AwaitAction() {
         awaitingPlayerAction = true;
-        Debug.Log($"Waiting for action from Player {currentPlayer}");
+        OnAwaitingNextAction?.Invoke(GetCurrentPlayerIndex());
     }
     
     public void HandlePlayerAction(Action action, int raiseAmount = 0) {
@@ -161,6 +169,15 @@ public class TexasHoldemManager : MonoBehaviour {
     }
 
     public void AdvancePhase() {
+        // Reset round state for the new phase
+        foreach (var player in players) {
+            player.ResetCurrentBet();
+            player.SetAction(Action.None);
+        }
+
+        currentBet = 0;
+        currentPlayer = startingPlayer;
+        
         // Transition between phases (Flop -> Turn -> River)
         switch (phase) {
             case Phase.Preflop:
@@ -183,6 +200,8 @@ public class TexasHoldemManager : MonoBehaviour {
                 Debug.LogError("Unknown phase");
                 break;
         }
+        
+        AwaitAction();
     }
     
     private void DealFlop() {
@@ -256,6 +275,8 @@ public class TexasHoldemManager : MonoBehaviour {
 
     private Player GetCurrentPlayer() => players[currentPlayer];
     private Player GetOtherPlayer() => players[1 - currentPlayer];
+    
+    private int GetCurrentPlayerIndex() => currentPlayer;
 
     public void ResetRoom() {
         players.Clear();
