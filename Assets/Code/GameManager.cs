@@ -7,10 +7,13 @@ public class GameManager : MonoBehaviour {
     [SerializeField] private TexasHoldemManager texasHoldemManager;
     [SerializeField] private FaceCamSquareCrop faceCamSquareCrop;
     [SerializeField] private MrChipsEmojiController emojiController;
+    [SerializeField] private AICaller aICaller;
     
     private const int PLAYER_INDEX = 0;
     private const int COMPUTER_INDEX = 1;
     private bool showComputerHand = false;
+
+    private string AIResponse = "";
 
     private void Start() {
         texasHoldemUIManager.OnPlayerAction += HandlePlayerAction;
@@ -21,6 +24,8 @@ public class GameManager : MonoBehaviour {
         
         texasHoldemManager.CreateRoom();
         texasHoldemManager.StartNewRound();
+
+        aICaller.OnApiResponseReceived += HandleAIResponse;
         UpdateUI();
     }
 
@@ -52,10 +57,7 @@ public class GameManager : MonoBehaviour {
         }
         else {
             Debug.Log("Waiting for action from Computer");
-            emojiController.SetEmotion(Emotion.Thinking);
             string prompt = texasHoldemManager.GetPrompt();
-            // GetWebCamImage()
-            // GetAICardInfo()
             /*
              * WAITING FOR AI CALL SHOULD BE HANDLED HERE NOT ANYWHERE ELSE, IN FACT YOU PROBABLY DONT NEED TO
              * TOUCH ANYTHING ELSE ANYWHERE IF IM BEING COMPLETELY HONEST CUZ MY CODE IS JUST THAT AMAZING
@@ -69,7 +71,15 @@ public class GameManager : MonoBehaviour {
              * everything else should be handled from there
              * if you run into any issues please contact me, Chris, I made most of this code <3
              */
+            cards = [];
+            suits = [];
+            
+            aICaller.GetAIResponse(cards, suits, GetWebCamImage());
         }
+    }
+
+    private void HandleApiResponse(string response) {
+        AIResponse = response
     }
     
     // format to whatever you need it to be for the AI to read

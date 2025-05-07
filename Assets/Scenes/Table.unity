@@ -4404,6 +4404,7 @@ MonoBehaviour:
   texasHoldemUIManager: {fileID: 520096678}
   texasHoldemManager: {fileID: 1255101668}
   faceCamSquareCrop: {fileID: 454450306}
+  aICaller: {fileID: 454450306}
   emojiController: {fileID: 1934709164}
 --- !u!4 &1255101667
 Transform:
@@ -6056,7 +6057,7 @@ SpriteRenderer:
   m_Size: {x: 0.24, y: 0.24}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!4 &1934709166
