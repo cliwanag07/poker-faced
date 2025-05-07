@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 public class AICaller : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public static event Action<string> OnApiResponseReceived;
+    public event Action<string> OnApiResponseReceived;
     
     void Start() {   
     }

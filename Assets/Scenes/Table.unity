@@ -4382,6 +4382,7 @@ GameObject:
   - component: {fileID: 1255101667}
   - component: {fileID: 1255101666}
   - component: {fileID: 1255101668}
+  - component: {fileID: 1255101669}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -4404,8 +4405,8 @@ MonoBehaviour:
   texasHoldemUIManager: {fileID: 520096678}
   texasHoldemManager: {fileID: 1255101668}
   faceCamSquareCrop: {fileID: 454450306}
-  aICaller: {fileID: 454450306}
   emojiController: {fileID: 1934709164}
+  aICaller: {fileID: 1255101669}
 --- !u!4 &1255101667
 Transform:
   m_ObjectHideFlags: 0
@@ -4431,6 +4432,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f15d9b0be7efb4000a1816b9190df63c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1255101669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1255101665}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f76bcfdb4726a46f2a46a5c54e0e519c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1260713989
@@ -6057,7 +6070,7 @@ SpriteRenderer:
   m_Size: {x: 0.24, y: 0.24}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!4 &1934709166

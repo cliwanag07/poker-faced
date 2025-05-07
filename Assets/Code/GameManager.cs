@@ -25,7 +25,7 @@ public class GameManager : MonoBehaviour {
         texasHoldemManager.CreateRoom();
         texasHoldemManager.StartNewRound();
 
-        aICaller.OnApiResponseReceived += HandleAIResponse;
+        aICaller.OnApiResponseReceived += HandleApiResponse;
         UpdateUI();
     }
 
