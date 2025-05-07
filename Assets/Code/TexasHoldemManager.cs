@@ -29,6 +29,7 @@ public class TexasHoldemManager : MonoBehaviour {
     
     private const string PLAYER1_COLOR = "blue"; // Blue
     private const string PLAYER2_COLOR = "red"; // Red
+    private const string WARNING_COLOR = "yellow"; // Yellow
     private const string SYSTEM_COLOR = "#CCCCCC";  // Gray
 
     public event Action<int> OnAwaitingNextAction;
@@ -157,6 +158,7 @@ public class TexasHoldemManager : MonoBehaviour {
                     AwaitAction();
                 } else {
                     Debug.LogWarning("Cannot check: unmatched bets");
+                    AppendToLog($"<color={WARNING_COLOR}>Cannot check when bets unmatched</color>");
                     AwaitAction();
                 }
                 break;
@@ -184,6 +186,7 @@ public class TexasHoldemManager : MonoBehaviour {
                     }
                 } else {
                     Debug.LogWarning("Invalid call amount");
+                    AppendToLog($"<color={WARNING_COLOR}>Invalid call amount</color>");
                     AwaitAction();
                 }
                 break;
@@ -191,6 +194,7 @@ public class TexasHoldemManager : MonoBehaviour {
             case Action.Bet:
                 if (AnyPlayerAllIn()) {
                     Debug.LogWarning("Can only fold or call when opponent is all in");
+                    AppendToLog($"<color={WARNING_COLOR}>Can only fold or call when opponent is all in</color>");
                     AwaitAction();
                 } else if (raiseAmount > 0 && raiseAmount <= player.GetStack()) {
                     Bet(raiseAmount, player);
@@ -203,12 +207,13 @@ public class TexasHoldemManager : MonoBehaviour {
                     // }
                 } else {
                     Debug.LogWarning("Invalid bet amount");
+                    AppendToLog($"<color={WARNING_COLOR}>Invalid bet amount</color>");
                     AwaitAction();
                 }
                 break;
 
             default:
-                Debug.LogWarning("Unhandled action type");
+                Debug.LogError("Unhandled action type");
                 AwaitAction();
                 break;
         }
@@ -495,11 +500,9 @@ public class Player {
     }
     
     public void EvaluateHand(List<Card> communityCards) {
-        // Combine the player's hand with the community cards
         List<Card> allCards = new List<Card>(hand);
         allCards.AddRange(communityCards);
-
-        // Evaluate the best 5-card hand here (simplified; you should implement the poker hand evaluation logic)
+        
         handRank = EvaluatePokerHand(allCards);
     }
 
