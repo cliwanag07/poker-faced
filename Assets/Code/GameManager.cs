@@ -75,8 +75,9 @@ public class GameManager : MonoBehaviour {
             var cardInfo = GetAICardInfo();
             var cards = cardInfo.cardValString;
             var suits = cardInfo.cardSuits;
+            var ratio = cardInfo.computerChipsToUserRatio;
             
-            aICaller.GetAIResponse(cards, suits, GetWebCamImage());
+            aICaller.GetAIResponse(cards, suits, ratio, GetWebCamImage());
         }
     }
 

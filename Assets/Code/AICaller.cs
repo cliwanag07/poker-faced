@@ -15,18 +15,19 @@ public class AICaller : MonoBehaviour
     void Update() {  
     }
     
-    public void GetAIResponse(string[] cards, string[] suits, byte[] image) {
-        StartCoroutine(GetAIResponseIEnumerator(cards, suits, image));
+    public void GetAIResponse(string[] cards, string[] suits, double ratio, byte[] image) {
+        StartCoroutine(GetAIResponseIEnumerator(cards, suits, ratio, image));
     }
 
-    private IEnumerator GetAIResponseIEnumerator(string[] cards, string[] suits, byte[] image) {
-        string url = "http://localhost:5000/AI";
+    private IEnumerator GetAIResponseIEnumerator(string[] cards, string[] suits, double ratio, byte[] image) {
+        string url = "http://localhost:8080/compute";
         string cardsArrayJson = JsonUtility.ToJson(cards);
         string suitsArrayJson = JsonUtility.ToJson(suits);
 
         WWWForm form = new WWWForm();
         form.AddField("cards", cardsArrayJson);
         form.AddField("suits", suitsArrayJson);
+        form.AddField("ratio", ratio.ToString("F3"));
         form.AddBinaryData("image", image, "image.jpg", "image/jpg");
 
         UnityWebRequest www = UnityWebRequest.Post(url, form);
