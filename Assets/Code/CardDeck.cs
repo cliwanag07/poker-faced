@@ -77,6 +77,18 @@ public enum CardValue {
     Eight, Nine, Ten, Jack, Queen, King
 }
 
+public static class CardSuitExtensions {
+    public static string ToSymbol(this CardSuit suit) {
+        return suit switch {
+            CardSuit.Clubs => "Club",
+            CardSuit.Diamonds => "Diamond",
+            CardSuit.Hearts => "Heart",
+            CardSuit.Spades => "Spade",
+            _ => "?"
+        };
+    }
+}
+
 public static class CardValueExtensions {
     public static string ToSymbol(this CardValue value) {
         return value switch {
