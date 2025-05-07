@@ -1,0 +1,6 @@
+[submodule "PythonBackend/pokerAi"]
+	path = PythonBackend/pokerAi
+	url = git@github.com:thisguyblink/pokerAi.git
+[submodule "pokerAi"]
+	path = pokerAi
+	url = git@github.com:thisguyblink/pokerAi.git
