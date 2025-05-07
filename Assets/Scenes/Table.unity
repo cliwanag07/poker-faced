@@ -4403,7 +4403,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   texasHoldemUIManager: {fileID: 520096678}
   texasHoldemManager: {fileID: 1255101668}
-  faceCamSquareCrop: {fileID: 0}
+  faceCamSquareCrop: {fileID: 454450306}
+  emojiController: {fileID: 1934709164}
 --- !u!4 &1255101667
 Transform:
   m_ObjectHideFlags: 0
@@ -5965,6 +5966,44 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   emojiRenderer: {fileID: 1934709165}
+  emotionEntries:
+  - emotion: 0
+    emojiSprites:
+    - {fileID: -1078448738, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 458611589, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 510123755, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 749279975, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -1463125624, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -1145601236, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 1462046488, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -947739450, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+  - emotion: 1
+    emojiSprites:
+    - {fileID: -131270104, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 981268397, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -2010866866, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -1819393231, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -634609883, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -290163071, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+  - emotion: 2
+    emojiSprites:
+    - {fileID: 1964159835, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -183907643, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -198960432, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -1028292867, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 198619270, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -1382688907, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -1271963091, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+  - emotion: 3
+    emojiSprites:
+    - {fileID: -1494457908, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -1580481005, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 18261774, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 424800649, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -1014916741, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: -2003343066, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+    - {fileID: 349572097, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+  emojiSwitchTimer: 2
 --- !u!212 &1934709165
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -6009,7 +6048,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 453832334, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
+  m_Sprite: {fileID: -1078448738, guid: 9065d2c0aa0c212478f3845e31c7a098, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -6029,7 +6068,7 @@ Transform:
   m_GameObject: {fileID: 1934709163}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.689, y: 1.816, z: 2.846}
+  m_LocalPosition: {x: 0.689, y: 1.749, z: 2.846}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6048,7 +6087,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 1934709166}
-  amplitude: 0.1
+  amplitude: 0.05
   frequency: 1.2
 --- !u!1 &1965986328
 GameObject:

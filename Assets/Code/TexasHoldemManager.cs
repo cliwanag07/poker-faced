@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 /// <summary>
@@ -34,6 +35,7 @@ public class TexasHoldemManager : MonoBehaviour {
 
     public event Action<int> OnAwaitingNextAction;
     public event System.Action OnUpdateUI;
+    public event Action<int> OnPlayerWin;
 
     private void Awake() {
         communityCards = new List<Card>();
@@ -359,6 +361,8 @@ public class TexasHoldemManager : MonoBehaviour {
         AppendToLog($"<color={winnerColor}><b>Player {winnerIndex + 1} wins the pot of {pot}</b></color>");
         AppendToLog($"<color={SYSTEM_COLOR}>-- Round Ended --</color>");
         
+        OnPlayerWin?.Invoke(winnerIndex);
+        
         // ResetRound();
         phase = Phase.EndRound;
         AwaitAction();
@@ -394,6 +398,8 @@ public class TexasHoldemManager : MonoBehaviour {
 
         AppendToLog($"<color={winnerColor}><b>Player {winnerIndex + 1} wins the pot of {pot}</b></color>");
         AppendToLog($"<color={SYSTEM_COLOR}>-- Round Ended --</color>");
+        
+        OnPlayerWin?.Invoke(winnerIndex);
         
         // ResetRound();
         phase = Phase.EndRound;

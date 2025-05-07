@@ -5,6 +5,7 @@ public class GameManager : MonoBehaviour {
     [SerializeField] private TexasHoldemUIManager texasHoldemUIManager;
     [SerializeField] private TexasHoldemManager texasHoldemManager;
     [SerializeField] private FaceCamSquareCrop faceCamSquareCrop;
+    [SerializeField] private MrChipsEmojiController emojiController;
     
     private const int PLAYER_INDEX = 0;
     private const int COMPUTER_INDEX = 1;
@@ -12,8 +13,10 @@ public class GameManager : MonoBehaviour {
 
     private void Start() {
         texasHoldemUIManager.OnPlayerAction += HandlePlayerAction;
+        
         texasHoldemManager.OnAwaitingNextAction += HandleAwaitingNextAction;
         texasHoldemManager.OnUpdateUI += UpdateUI;
+        texasHoldemManager.OnPlayerWin += HandlePlayerWin;
         
         texasHoldemManager.CreateRoom();
         texasHoldemManager.StartNewRound();
@@ -28,6 +31,11 @@ public class GameManager : MonoBehaviour {
 
         showComputerHand = texasHoldemManager.Phase == Phase.EndRound;
     }
+
+    private void HandlePlayerWin(int playerIndex) {
+        Debug.Log(playerIndex);
+        emojiController.SetEmotion(playerIndex == PLAYER_INDEX ? Emotion.Sad : Emotion.Happy);
+    }
     
     private void HandlePlayerAction(Action action, int raiseAmount = 0) {
         texasHoldemManager.HandlePlayerAction(action, raiseAmount);
@@ -39,9 +47,11 @@ public class GameManager : MonoBehaviour {
         SetButtons();
         if (currentPlayerIndex == PLAYER_INDEX) {
             Debug.Log("Waiting for action from Player");
+            emojiController.SetEmotion(Emotion.Idle);
         }
         else {
             Debug.Log("Waiting for action from Computer");
+            emojiController.SetEmotion(Emotion.Thinking);
             string prompt = texasHoldemManager.GetPrompt();
             /*
              * WAITING FOR AI CALL SHOULD BE HANDLED HERE NOT ANYWHERE ELSE, IN FACT YOU PROBABLY DONT NEED TO
