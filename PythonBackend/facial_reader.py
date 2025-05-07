@@ -10,14 +10,18 @@ def read_image(image):
 
     print(result[0]['emotion'])
 
-    max = 0
-    category = ""
-    for k, v in result[0]['emotion'].items():
-        if v > max:
-            max = v
-            category = k
+    negative = ['contempt', 'anger', 'fear', 'disgust', 'sad']
+    positive = ['surprised', 'happy']
 
-    return (category, max)
+    pos = 0
+    neg = 0
+    for k, v in result[0]['emotion'].items():
+        if k in positive:
+            pos += v
+        else:
+            neg += v
+            
+    return ("positive", pos) if pos > neg else ("negative", neg)
 
 def read_image_as_cv2(file):
     image = Image.open(file.stream).convert('RGB')
