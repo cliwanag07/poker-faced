@@ -43,6 +43,14 @@ public class GameManager : MonoBehaviour {
         Debug.Log(playerIndex);
         emojiController.SetEmotion(playerIndex == PLAYER_INDEX ? Emotion.Sad : Emotion.Happy);
     }
+
+    private Player GetUser() {
+        return texasHoldemManager.Players[PLAYER_INDEX];
+    }
+
+    private Player GetComputer() {
+        return texasHoldemManager.Players[COMPUTER_INDEX];
+    }
     
     private void HandlePlayerAction(Action action, int raiseAmount = 0) {
         texasHoldemManager.HandlePlayerAction(action, raiseAmount);
@@ -71,8 +79,75 @@ public class GameManager : MonoBehaviour {
 
     private void HandleApiResponse(float response) {
         Debug.Log(response);
-        
-        
+
+        var userLastAction = texasHoldemManager.Players[PLAYER_INDEX].GetAction();
+        switch (userLastAction) {
+            case Action.Bet:
+                switch (response) {
+                    case > 0.85f: // Raise
+                        texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
+                        break;
+                    case > 0.5f: // Call
+                        texasHoldemManager.HandlePlayerAction(Action.Call);
+                        break;
+                    case > 0.25f: // Call if bet < 25% of stack
+                        texasHoldemManager.HandlePlayerAction(
+                            GetComputer().GetCurrentBet() < texasHoldemManager.Pot * .25 ? Action.Call : Action.Fold);
+                        break;
+                    default: // Fold
+                        texasHoldemManager.HandlePlayerAction(Action.Fold);
+                        break;
+                }
+                break;
+            case Action.Check:
+                switch (response) {
+                    case > 0.65f: // Raise
+                        texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
+                        break;
+                    default: // Check
+                        texasHoldemManager.HandlePlayerAction(Action.Check);
+                        break;
+                }
+                break;
+            default:
+                if (texasHoldemManager.Phase != Phase.Preflop) { // NOT IN PREFLOP
+                    switch (response) {
+                        case > 0.85f: // Raise
+                            texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
+                            break;
+                        case > 0.25f: // Check
+                            texasHoldemManager.HandlePlayerAction(Action.Check);
+                            break;
+                        default: // Fold
+                            texasHoldemManager.HandlePlayerAction(Action.Fold);
+                            break;
+                    }
+                } else { // IN PREFLOP
+                    if (GetComputer().IsSmallBlind) { // YOU ARE FIRST TO MOVE
+                        switch (response) { 
+                            case > 0.85f: // Raise
+                                texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
+                                break;
+                            case > 0.15f: // Call
+                                texasHoldemManager.HandlePlayerAction(Action.Call);
+                                break;
+                            default: // Fold
+                                texasHoldemManager.HandlePlayerAction(Action.Fold);
+                                break;
+                        }
+                    } else { // YOU ARE SECOND TO MOVE
+                        switch (response) {
+                            case > 0.85f: // Raise
+                                texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
+                                break;
+                            default: // Check
+                                texasHoldemManager.HandlePlayerAction(Action.Check);
+                                break;
+                        }
+                    }
+                }
+                break;
+        }
     }
     
     // format to whatever you need it to be for the AI to read
