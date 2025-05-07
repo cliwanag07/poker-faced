@@ -96,4 +96,23 @@ public static class CardValueExtensions {
             _ => "?"
         };
     }
+
+    public static int ToInt(this CardValue value) {
+        return value switch {
+            CardValue.Ace => 14,
+            CardValue.Two => 2,
+            CardValue.Three => 3,
+            CardValue.Four => 4,
+            CardValue.Five => 5,
+            CardValue.Six => 6,
+            CardValue.Seven => 7,
+            CardValue.Eight => 8,
+            CardValue.Nine => 9,
+            CardValue.Ten => 10,
+            CardValue.Jack => 11,
+            CardValue.Queen => 12,
+            CardValue.King => 13,
+            _ => 0
+        };
+    }
 }
