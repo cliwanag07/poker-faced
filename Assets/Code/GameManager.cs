@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour {
@@ -53,6 +54,8 @@ public class GameManager : MonoBehaviour {
             Debug.Log("Waiting for action from Computer");
             emojiController.SetEmotion(Emotion.Thinking);
             string prompt = texasHoldemManager.GetPrompt();
+            // GetWebCamImage()
+            // GetAICardInfo()
             /*
              * WAITING FOR AI CALL SHOULD BE HANDLED HERE NOT ANYWHERE ELSE, IN FACT YOU PROBABLY DONT NEED TO
              * TOUCH ANYTHING ELSE ANYWHERE IF IM BEING COMPLETELY HONEST CUZ MY CODE IS JUST THAT AMAZING
@@ -75,6 +78,36 @@ public class GameManager : MonoBehaviour {
         return croppedFaceImage.EncodeToPNG();
         // return croppedFaceImage.EncodeToJPG();
     }
+
+    private AICardInfo GetAICardInfo() {
+        var cardInfo = new AICardInfo();
+
+        // get player hand (2 cards)
+        for (int i = 0; i < 2; ++i) {
+            var card = texasHoldemManager.Players[COMPUTER_INDEX].GetHand()[i];
+            cardInfo.cardValNumbers.Append(card.Value.ToInt());
+            cardInfo.cardValString.Append(card.Value.ToString());
+            cardInfo.cardSuits.Append(card.Suit.ToSymbol());
+        }
+
+        // get community cards (up to 5 cards)
+        for (int i = 0; i < 5; ++i) {
+            if (i < texasHoldemManager.CommunityCards.Count && texasHoldemManager.CommunityCards[i] != null) {
+                var card = texasHoldemManager.CommunityCards[i];
+                cardInfo.cardValNumbers.Append(card.Value.ToInt());
+                cardInfo.cardValString.Append(card.Value.ToString());
+                cardInfo.cardSuits.Append(card.Suit.ToSymbol());
+            } else {
+                // append placeholder if no available community card
+                cardInfo.cardValNumbers.Append(0);
+                cardInfo.cardValString.Append("NONE");
+                cardInfo.cardSuits.Append("NONE");
+            }
+        }
+
+        return cardInfo;
+    }
+
     
     private void SetButtons() {
         #if UNITY_EDITOR
@@ -121,5 +154,11 @@ public class GameManager : MonoBehaviour {
         public List<Card> computerHand { get; set; }
         public List<Card> communityCards { get; set; }
         public string log { get; set; }
+    }
+
+    public class AICardInfo {
+        public string[] cardValString;
+        public int[] cardValNumbers;
+        public string[] cardSuits;
     }
 }
