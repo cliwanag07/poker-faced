@@ -71,8 +71,9 @@ public class GameManager : MonoBehaviour {
              * everything else should be handled from there
              * if you run into any issues please contact me, Chris, I made most of this code <3
              */
-            cards = [];
-            suits = [];
+            var cardInfo = GetAICardInfo();
+            var cards = cardInfo.cardValString;
+            var suits = cardInfo.cardSuits;
             
             aICaller.GetAIResponse(cards, suits, GetWebCamImage());
         }
