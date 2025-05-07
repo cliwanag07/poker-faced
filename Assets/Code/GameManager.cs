@@ -14,7 +14,7 @@ public class GameManager : MonoBehaviour {
     private const int COMPUTER_INDEX = 1;
     private bool showComputerHand = false;
 
-    private string AIResponse = "";
+    private float AIResponse;
 
     private void Start() {
         texasHoldemUIManager.OnPlayerAction += HandlePlayerAction;
@@ -58,39 +58,28 @@ public class GameManager : MonoBehaviour {
         }
         else {
             Debug.Log("Waiting for action from Computer");
-            string prompt = texasHoldemManager.GetPrompt();
-            /*
-             * WAITING FOR AI CALL SHOULD BE HANDLED HERE NOT ANYWHERE ELSE, IN FACT YOU PROBABLY DONT NEED TO
-             * TOUCH ANYTHING ELSE ANYWHERE IF IM BEING COMPLETELY HONEST CUZ MY CODE IS JUST THAT AMAZING
-             * 
-             * FOR EXAMPLE:
-             * call to AI with prompt
-             * AI will call method here based on response, either
-             * texasHoldEmManager.HandlePlayerAction(action);
-             * OR
-             * texasHoldEmManager.HandlePlayerAction(action, raiseAmount);
-             * everything else should be handled from there
-             * if you run into any issues please contact me, Chris, I made most of this code <3
-             */
             var cardInfo = GetAICardInfo();
-            var cards = cardInfo.cardValString;
+            var cards = cardInfo.cardValNumbers;
+            Debug.Log(string.Join(", ", cardInfo.cardValNumbers));
             var suits = cardInfo.cardSuits;
+            Debug.Log(string.Join(", ", cardInfo.cardSuits));
             var ratio = cardInfo.computerChipsToUserRatio;
             
             aICaller.GetAIResponse(cards, suits, ratio, GetWebCamImage());
         }
     }
 
-    private void HandleApiResponse(string response)
-    {
-        AIResponse = response;
+    private void HandleApiResponse(float response) {
+        Debug.Log(response);
+        
+        
     }
     
     // format to whatever you need it to be for the AI to read
     private byte[] GetWebCamImage() {
         Texture2D croppedFaceImage = faceCamSquareCrop.GetCroppedSquareTexture();
-        return croppedFaceImage.EncodeToPNG();
-        // return croppedFaceImage.EncodeToJPG();
+        // return croppedFaceImage.EncodeToPNG();
+        return croppedFaceImage.EncodeToJPG();
     }
 
     private AICardInfo GetAICardInfo() {
@@ -99,26 +88,26 @@ public class GameManager : MonoBehaviour {
         // get player hand (2 cards)
         for (int i = 0; i < 2; ++i) {
             var card = texasHoldemManager.Players[COMPUTER_INDEX].GetHand()[i];
-            cardInfo.cardValNumbers.Append(card.Value.ToInt());
-            cardInfo.cardValString.Append(card.Value.ToString());
-            cardInfo.cardSuits.Append(card.Suit.ToSymbol());
+            cardInfo.cardValNumbers.Add(card.Value.ToInt());
+            cardInfo.cardValString.Add(card.Value.ToString());
+            cardInfo.cardSuits.Add(card.Suit.ToSymbol());
         }
-
+        
         // get community cards (up to 5 cards)
         for (int i = 0; i < 5; ++i) {
             if (i < texasHoldemManager.CommunityCards.Count && texasHoldemManager.CommunityCards[i] != null) {
                 var card = texasHoldemManager.CommunityCards[i];
-                cardInfo.cardValNumbers.Append(card.Value.ToInt());
-                cardInfo.cardValString.Append(card.Value.ToString());
-                cardInfo.cardSuits.Append(card.Suit.ToSymbol());
+                cardInfo.cardValNumbers.Add(card.Value.ToInt());
+                cardInfo.cardValString.Add(card.Value.ToString());
+                cardInfo.cardSuits.Add(card.Suit.ToSymbol());
             } else {
                 // append placeholder if no available community card
-                cardInfo.cardValNumbers.Append(0);
-                cardInfo.cardValString.Append("NONE");
-                cardInfo.cardSuits.Append("NONE");
+                cardInfo.cardValNumbers.Add(0);
+                cardInfo.cardValString.Add("NONE");
+                cardInfo.cardSuits.Add("NONE");
             }
         }
-
+        
         cardInfo.computerChipsToUserRatio =
             Math.Round(
                 (double)texasHoldemManager.Players[COMPUTER_INDEX].GetStack() /
@@ -176,9 +165,10 @@ public class GameManager : MonoBehaviour {
     }
 
     public class AICardInfo {
-        public string[] cardValString;
-        public int[] cardValNumbers;
-        public string[] cardSuits;
-        public double computerChipsToUserRatio;
+        public List<string> cardValString = new();
+        public List<int> cardValNumbers = new();
+        public List<string> cardSuits = new();
+        public double computerChipsToUserRatio = 0.0;
     }
+
 }
