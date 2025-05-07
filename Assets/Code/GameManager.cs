@@ -79,8 +79,9 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    private void HandleApiResponse(string response) {
-        AIResponse = response
+    private void HandleApiResponse(string response)
+    {
+        AIResponse = response;
     }
     
     // format to whatever you need it to be for the AI to read
