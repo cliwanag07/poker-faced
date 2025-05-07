@@ -220,9 +220,8 @@ public class TexasHoldemManager : MonoBehaviour {
         string bigBlindAmount = $"{smallBlind * 2} chips";
         string startingStack = $"{STARTING_MONEY} chips";
         string playerPosition = currentPlayer == 0 ? "SB" : "BB";
-        string opponentPosition = currentPlayer == 0 ? "BB" : "SB";
         string playerHand = string.Join(" and ", players[currentPlayer].GetHand().Select(card => card.ToString()));
-        string opponentActions = log; // Assuming the log contains formatted actions
+        string opponentActions = log; 
         string communityCardsString = string.Join(", ", communityCards.Select(card => card.ToString()));
         string potSize = $"{pot} chips";
 
