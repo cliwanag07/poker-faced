@@ -214,6 +214,29 @@ public class TexasHoldemManager : MonoBehaviour {
         }
 
     }
+    // prompt for the AI to use
+    public string GetPrompt() {
+        string smallBlindAmount = $"{smallBlind} chips";
+        string bigBlindAmount = $"{smallBlind * 2} chips";
+        string startingStack = $"{STARTING_MONEY} chips";
+        string playerPosition = currentPlayer == 0 ? "SB" : "BB";
+        string opponentPosition = currentPlayer == 0 ? "BB" : "SB";
+        string playerHand = string.Join(" and ", players[currentPlayer].GetHand().Select(card => card.ToString()));
+        string opponentActions = log; // Assuming the log contains formatted actions
+        string communityCardsString = string.Join(", ", communityCards.Select(card => card.ToString()));
+        string potSize = $"{pot} chips";
+
+        return $"You are a specialist in playing 6-handed No Limit Texas Holdem. The following will be a game scenario and you need to make the optimal decision.\n\n" +
+               $"Here is a game summary:\n\n" +
+               $"The small blind is {smallBlindAmount} and the big blind is {bigBlindAmount}. Everyone started with {startingStack}.\n" +
+               $"The player positions involved in this game are UTG, HJ, CO, BTN, SB, BB.\n" +
+               $"In this hand, your position is {playerPosition}, and your holding is [{playerHand}].\n" +
+               $"{opponentActions}\n" +
+               $"The community cards are {communityCardsString}.\n\n" +
+               $"To remind you, the current pot size is {potSize}, and your holding is [{playerHand}].\n\n" +
+               $"Decide on an action based on the strength of your hand on this board, your position, and actions before you. Do not explain your answer.\n" +
+               $"Your optimal action is:";
+    }
 
     private void ProceedOrNextPlayer() {
         if (currentPlayer == startingPlayer) {

@@ -42,6 +42,7 @@ public class GameManager : MonoBehaviour {
         }
         else {
             Debug.Log("Waiting for action from Computer");
+            string prompt = texasHoldemManager.GetPrompt();
             /*
              * WAITING FOR AI CALL SHOULD BE HANDLED HERE NOT ANYWHERE ELSE, IN FACT YOU PROBABLY DONT NEED TO
              * TOUCH ANYTHING ELSE ANYWHERE IF IM BEING COMPLETELY HONEST CUZ MY CODE IS JUST THAT AMAZING
