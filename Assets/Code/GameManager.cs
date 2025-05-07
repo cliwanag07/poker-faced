@@ -86,7 +86,7 @@ public class GameManager : MonoBehaviour {
         if (texasHoldemManager.GetCurrentPlayerIndex() == PLAYER_INDEX) 
             texasHoldemUIManager.SetButtons(true);
         else 
-            texasHoldemUIManager.SetButtons(fals);
+            texasHoldemUIManager.SetButtons(false);
         #endif
     }
     
