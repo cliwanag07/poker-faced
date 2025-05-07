@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -117,6 +118,11 @@ public class GameManager : MonoBehaviour {
             }
         }
 
+        cardInfo.computerChipsToUserRatio =
+            Math.Round(
+                (double)texasHoldemManager.Players[COMPUTER_INDEX].GetStack() /
+                texasHoldemManager.Players[PLAYER_INDEX].GetStack(), 3);
+
         return cardInfo;
     }
 
@@ -172,5 +178,6 @@ public class GameManager : MonoBehaviour {
         public string[] cardValString;
         public int[] cardValNumbers;
         public string[] cardSuits;
+        public double computerChipsToUserRatio;
     }
 }
