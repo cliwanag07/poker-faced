@@ -25,6 +25,7 @@ public class TexasHoldemUIManager : MonoBehaviour {
     [SerializeField] private TextMeshProUGUI computerStackText;
     [SerializeField] private TextMeshProUGUI playerCurrentBetText;
     [SerializeField] private TextMeshProUGUI computerCurrentBetText;
+    [SerializeField] private TextMeshProUGUI roundResetNotif;
 
     [SerializeField] private List<SpriteRenderer> communityCards;
     [SerializeField] private List<SpriteRenderer> playerCards;
@@ -86,14 +87,14 @@ public class TexasHoldemUIManager : MonoBehaviour {
                 ? cardBack
                 : uiUpdateInfo.playerHand[i].Sprite;
 
-        if (uiUpdateInfo.revealComputerHand) {
-            for (int i = 0; i < computerCards.Count; i++)
-                computerCards[i].sprite = i >= uiUpdateInfo.computerHand.Count || uiUpdateInfo.computerHand[i] == null
-                    ? cardBack
-                    : uiUpdateInfo.computerHand[i].Sprite;
-        }
+        for (int i = 0; i < computerCards.Count; i++)
+            computerCards[i].sprite = i >= uiUpdateInfo.computerHand.Count || uiUpdateInfo.computerHand[i] == null || !uiUpdateInfo.revealComputerHand
+                ? cardBack
+                : uiUpdateInfo.computerHand[i].Sprite;
         
         log.text = uiUpdateInfo.log;
+
+        roundResetNotif.text = uiUpdateInfo.isRoundEnd ? "PRESS 'SPACE' TO START NEXT ROUND" : "";
     }
 
 }

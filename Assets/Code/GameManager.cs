@@ -13,6 +13,7 @@ public class GameManager : MonoBehaviour {
     private const int PLAYER_INDEX = 0;
     private const int COMPUTER_INDEX = 1;
     private bool showComputerHand = false;
+    private bool roundEnd = false;
 
     private float AIResponse;
 
@@ -32,11 +33,17 @@ public class GameManager : MonoBehaviour {
 
     private void Update() {
         if (Input.GetKeyDown(KeyCode.Space)) {
-            if (texasHoldemManager.Phase == Phase.EndRound)
-                texasHoldemManager.ResetRound();
+            if (texasHoldemManager.Phase == Phase.EndRound) {
+                if (texasHoldemManager.Players[PLAYER_INDEX].GetStack() <= 0 || 
+                    texasHoldemManager.Players[COMPUTER_INDEX].GetStack() <= 0)
+                    texasHoldemManager.ResetRoom();
+                else
+                    texasHoldemManager.ResetRound();
+            }
         }
 
-        showComputerHand = texasHoldemManager.Phase == Phase.EndRound;
+        showComputerHand = roundEnd = texasHoldemManager.Phase == Phase.EndRound;
+        // UpdateUI();
     }
 
     private void HandlePlayerWin(int playerIndex) {
@@ -61,11 +68,15 @@ public class GameManager : MonoBehaviour {
         if (texasHoldemManager.Phase == Phase.EndRound) return;
         SetButtons();
         if (currentPlayerIndex == PLAYER_INDEX) {
+#if UNITY_EDITOR
             Debug.Log("Waiting for action from Player");
+#endif
             emojiController.SetEmotion(Emotion.Idle);
         }
         else {
+#if UNITY_EDITOR
             Debug.Log("Waiting for action from Computer");
+#endif
             var cardInfo = GetAICardInfo();
             var cards = cardInfo.cardValNumbers;
             Debug.Log(string.Join(", ", cardInfo.cardValNumbers));
@@ -76,73 +87,105 @@ public class GameManager : MonoBehaviour {
             aICaller.GetAIResponse(cards, suits, ratio, GetWebCamImage());
         }
     }
-
+    
     private void HandleApiResponse(float response) {
+#if UNITY_EDITOR
         Debug.Log(response);
+#endif
 
-        var userLastAction = texasHoldemManager.Players[PLAYER_INDEX].GetAction();
+        var computer = texasHoldemManager.Players[COMPUTER_INDEX];
+        var player = texasHoldemManager.Players[PLAYER_INDEX];
+        var pot = texasHoldemManager.Pot;
+
+        var userLastAction = player.GetAction();
+        int compStack = computer.GetStack();
+        int compBet = computer.GetCurrentBet();
+        int playerBet = player.GetCurrentBet();
+        int playerStack = player.GetStack();
+
+        float rand = UnityEngine.Random.value;
+
+        // stack awareness
+        bool playerIsShort = playerStack < compStack * 0.4f;
+        bool compIsShort = compStack < playerStack * 0.4f;
+        bool playerPotCommitted = playerBet >= playerStack * 0.9f;
+
+        // bluffing logic
+        bool bluffRaise = (response < 0.3f && rand < 0.06f && !playerPotCommitted) ||
+                          (response < 0.6f && playerIsShort && rand < 0.2f);  // bully short player
+
+        bool bluffCall = response < 0.1f && rand < 0.15f && !playerPotCommitted;
+
+        // hand strength
+        bool isStrong = response > 0.75f || (response > 0.6f && rand > 0.8f);
+        bool isGood = response > 0.5f || (response > 0.4f && rand > 0.7f);
+        bool isMediocre = response > 0.25f;
+
+        Action DecideRaise() => Action.Bet;
+        Action DecideCallOrCheck() =>
+            userLastAction == Action.Bet ? Action.Call : Action.Check;
+        Action DecideFoldOrCheck() =>
+            userLastAction == Action.Bet ? Action.Fold : Action.Check;
+
+        bool canRaise = compStack > pot;
+        bool playerAllIn = player.GetIsAllIn();
+
+        // if player is all-in AI can only call or fold
+        if (playerAllIn) {
+            bool shouldCall = isGood || isMediocre || bluffCall;
+            if (shouldCall) {
+                texasHoldemManager.HandlePlayerAction(Action.Call);
+            } else {
+                texasHoldemManager.HandlePlayerAction(Action.Fold);
+            }
+            return;
+        }
+
+        // regular decision logic
         switch (userLastAction) {
             case Action.Bet:
-                switch (response) {
-                    case > 0.85f: // Raise
-                        texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
-                        break;
-                    case > 0.5f: // Call
-                        texasHoldemManager.HandlePlayerAction(Action.Call);
-                        break;
-                    case > 0.25f: // Call if bet < 25% of stack
-                        texasHoldemManager.HandlePlayerAction(
-                            GetComputer().GetCurrentBet() < texasHoldemManager.Pot * .25 ? Action.Call : Action.Fold);
-                        break;
-                    default: // Fold
-                        texasHoldemManager.HandlePlayerAction(Action.Fold);
-                        break;
+                if ((isStrong && canRaise) || bluffRaise) {
+                    texasHoldemManager.HandlePlayerAction(DecideRaise(), Math.Min(pot, compStack));
+                } else if (isGood || bluffCall) {
+                    texasHoldemManager.HandlePlayerAction(DecideCallOrCheck());
+                } else if (isMediocre && compBet < compStack * 0.25f) {
+                    texasHoldemManager.HandlePlayerAction(DecideCallOrCheck());
+                } else {
+                    texasHoldemManager.HandlePlayerAction(DecideFoldOrCheck());
                 }
                 break;
+
             case Action.Check:
-                switch (response) {
-                    case > 0.65f: // Raise
-                        texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
-                        break;
-                    default: // Check
-                        texasHoldemManager.HandlePlayerAction(Action.Check);
-                        break;
+                if ((response > 0.65f || bluffRaise) && canRaise) {
+                    texasHoldemManager.HandlePlayerAction(DecideRaise(), Math.Min(pot, compStack));
+                } else {
+                    texasHoldemManager.HandlePlayerAction(DecideCallOrCheck());
                 }
                 break;
+
             default:
-                if (texasHoldemManager.Phase != Phase.Preflop) { // NOT IN PREFLOP
-                    switch (response) {
-                        case > 0.85f: // Raise
-                            texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
-                            break;
-                        case > 0.25f: // Check
-                            texasHoldemManager.HandlePlayerAction(Action.Check);
-                            break;
-                        default: // Fold
-                            texasHoldemManager.HandlePlayerAction(Action.Fold);
-                            break;
+                if (texasHoldemManager.Phase != Phase.Preflop) {
+                    if ((isStrong && canRaise) || bluffRaise) {
+                        texasHoldemManager.HandlePlayerAction(DecideRaise(), Math.Min(pot, compStack));
+                    } else if (isMediocre || bluffCall) {
+                        texasHoldemManager.HandlePlayerAction(DecideCallOrCheck());
+                    } else {
+                        texasHoldemManager.HandlePlayerAction(DecideFoldOrCheck());
                     }
-                } else { // IN PREFLOP
-                    if (GetComputer().IsSmallBlind) { // YOU ARE FIRST TO MOVE
-                        switch (response) { 
-                            case > 0.85f: // Raise
-                                texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
-                                break;
-                            case > 0.15f: // Call
-                                texasHoldemManager.HandlePlayerAction(Action.Call);
-                                break;
-                            default: // Fold
-                                texasHoldemManager.HandlePlayerAction(Action.Fold);
-                                break;
+                } else {
+                    if (computer.IsSmallBlind) {
+                        if ((isStrong && canRaise) || bluffRaise) {
+                            texasHoldemManager.HandlePlayerAction(DecideRaise(), Math.Min(pot, compStack));
+                        } else if (isGood || isMediocre || bluffCall) {
+                            texasHoldemManager.HandlePlayerAction(Action.Call);
+                        } else {
+                            texasHoldemManager.HandlePlayerAction(Action.Fold);
                         }
-                    } else { // YOU ARE SECOND TO MOVE
-                        switch (response) {
-                            case > 0.85f: // Raise
-                                texasHoldemManager.HandlePlayerAction(Action.Bet, texasHoldemManager.Pot);
-                                break;
-                            default: // Check
-                                texasHoldemManager.HandlePlayerAction(Action.Check);
-                                break;
+                    } else {
+                        if ((isStrong && canRaise) || bluffRaise) {
+                            texasHoldemManager.HandlePlayerAction(DecideRaise(), Math.Min(pot, compStack));
+                        } else {
+                            texasHoldemManager.HandlePlayerAction(DecideCallOrCheck());
                         }
                     }
                 }
@@ -222,6 +265,7 @@ public class GameManager : MonoBehaviour {
             computerHand = texasHoldemManager.Players[COMPUTER_INDEX].GetHand(),
             communityCards = texasHoldemManager.CommunityCards,
             log = texasHoldemManager.Log,
+            isRoundEnd = roundEnd,
         });
         texasHoldemUIManager.SetCurrentAction(texasHoldemManager.GetCurrentPlayerIndex() == PLAYER_INDEX ? "YOU" : "COMPUTER");
     }
@@ -237,6 +281,7 @@ public class GameManager : MonoBehaviour {
         public List<Card> computerHand { get; set; }
         public List<Card> communityCards { get; set; }
         public string log { get; set; }
+        public  bool isRoundEnd { get; set; }
     }
 
     public class AICardInfo {

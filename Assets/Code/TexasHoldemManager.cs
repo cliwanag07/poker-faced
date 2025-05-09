@@ -27,6 +27,7 @@ public class TexasHoldemManager : MonoBehaviour {
     private string log;
     
     private bool awaitingPlayerAction = false;
+    private bool isShowdown = false;
     
     private const string PLAYER1_COLOR = "blue"; // Blue
     private const string PLAYER2_COLOR = "red"; // Red
@@ -51,10 +52,10 @@ public class TexasHoldemManager : MonoBehaviour {
     public Phase Phase => phase;
 
     public void CreateRoom(int smallBlind = STARTING_MONEY / 100, int startingCash = STARTING_MONEY) {
-        ResetRoom();
-
         if (smallBlind >= startingCash / 2) {
+#if UNITY_EDITOR
             Debug.LogError("Small blind cannot be larger than half of starting cash");
+#endif
             return;
         }
 
@@ -83,6 +84,7 @@ public class TexasHoldemManager : MonoBehaviour {
         phase = Phase.Preflop;
         cardDeck.ResetDeck();
         currentBet = 0;
+        isShowdown = false;
 
         DealPlayers();
         CollectBlinds();
@@ -156,10 +158,14 @@ public class TexasHoldemManager : MonoBehaviour {
                     AppendToLog(label + ": Checks");
                     ProceedOrNextPlayer();
                 } else if (AnyPlayerAllIn()) {
+#if UNITY_EDITOR
                     Debug.LogWarning("Can only fold or call when opponent is all in");
+#endif
                     AwaitAction();
                 } else {
+#if UNITY_EDITOR
                     Debug.LogWarning("Cannot check: unmatched bets");
+#endif
                     AppendToLog($"<color={WARNING_COLOR}>Cannot check when bets unmatched</color>");
                     AwaitAction();
                 }
@@ -169,9 +175,7 @@ public class TexasHoldemManager : MonoBehaviour {
                 int callAmount = opponent.GetCurrentBet() - player.GetCurrentBet();
                 if (callAmount > 0) {
                     var actualCall = player.Bet(callAmount);
-                    if (opponent.GetIsAllIn()) {
-                        StartCoroutine(AutoAdvanceToShowdown());
-                    } else if (player.GetIsAllIn()) {
+                    if (player.GetIsAllIn()) {
                         AppendToLog(label + $": Goes all-in with {actualCall}");
                         // refund side pot if applicable
                         if (opponent.GetCurrentBet() - actualCall > 0) {
@@ -180,6 +184,10 @@ public class TexasHoldemManager : MonoBehaviour {
                         }
                         pot += actualCall;
                         StartCoroutine(AutoAdvanceToShowdown());
+                    } else if (opponent.GetIsAllIn()) {
+                        pot += actualCall;
+                        AppendToLog(label + $": Calls All-In with {actualCall}");
+                        StartCoroutine(AutoAdvanceToShowdown());
                     } else {
                         pot += actualCall;
                         AppendToLog(label + $": Calls with {actualCall}");
@@ -187,15 +195,19 @@ public class TexasHoldemManager : MonoBehaviour {
                         else AdvancePhase();
                     }
                 } else {
+#if UNITY_EDITOR
                     Debug.LogWarning("Invalid call amount");
+#endif
                     AppendToLog($"<color={WARNING_COLOR}>Invalid call amount</color>");
                     AwaitAction();
                 }
                 break;
 
             case Action.Bet:
-                if (AnyPlayerAllIn()) {
+                if (opponent.GetIsAllIn()) {
+#if UNITY_EDITOR
                     Debug.LogWarning("Can only fold or call when opponent is all in");
+#endif
                     AppendToLog($"<color={WARNING_COLOR}>Can only fold or call when opponent is all in</color>");
                     AwaitAction();
                 } else if (raiseAmount > 0 && raiseAmount <= player.GetStack()) {
@@ -204,44 +216,25 @@ public class TexasHoldemManager : MonoBehaviour {
                     //     StartCoroutine(AutoAdvanceToShowdown());
                     // }
                     // else {
-                        SetNextPlayer();
-                        AwaitAction();
+                    ProceedOrNextPlayer();
                     // }
                 } else {
+#if UNITY_EDITOR
                     Debug.LogWarning("Invalid bet amount");
+#endif
                     AppendToLog($"<color={WARNING_COLOR}>Invalid bet amount</color>");
                     AwaitAction();
                 }
                 break;
 
             default:
+#if UNITY_EDITOR
                 Debug.LogError("Unhandled action type");
+#endif
                 AwaitAction();
                 break;
         }
 
-    }
-    // prompt for the AI to use
-    public string GetPrompt() {
-        string smallBlindAmount = $"{smallBlind} chips";
-        string bigBlindAmount = $"{smallBlind * 2} chips";
-        string startingStack = $"{STARTING_MONEY} chips";
-        string playerPosition = currentPlayer == 0 ? "SB" : "BB";
-        string playerHand = string.Join(" and ", players[currentPlayer].GetHand().Select(card => card.ToString()));
-        string opponentActions = log; 
-        string communityCardsString = string.Join(", ", communityCards.Select(card => card.ToString()));
-        string potSize = $"{pot} chips";
-
-        return $"You are a specialist in playing 6-handed No Limit Texas Holdem. The following will be a game scenario and you need to make the optimal decision.\n\n" +
-               $"Here is a game summary:\n\n" +
-               $"The small blind is {smallBlindAmount} and the big blind is {bigBlindAmount}. Everyone started with {startingStack}.\n" +
-               $"The player positions involved in this game are UTG, HJ, CO, BTN, SB, BB.\n" +
-               $"In this hand, your position is {playerPosition}, and your holding is [{playerHand}].\n" +
-               $"{opponentActions}\n" +
-               $"The community cards are {communityCardsString}.\n\n" +
-               $"To remind you, the current pot size is {potSize}, and your holding is [{playerHand}].\n\n" +
-               $"Decide on an action based on the strength of your hand on this board, your position, and actions before you. Do not explain your answer.\n" +
-               $"Your optimal action is:";
     }
 
     private void ProceedOrNextPlayer() {
@@ -259,6 +252,8 @@ public class TexasHoldemManager : MonoBehaviour {
     }
     
     private IEnumerator AutoAdvanceToShowdown() {
+        isShowdown = true;
+        
         yield return new WaitForSeconds(delay); // delay for pacing
 
         while (phase != Phase.River) {
@@ -314,14 +309,18 @@ public class TexasHoldemManager : MonoBehaviour {
                 EndRoundBasedOnHands();
                 break;
             default:
+#if UNITY_EDITOR
                 Debug.LogError("Unknown phase");
+#endif
                 break;
         }
     }
     
     private IEnumerator DealFlop()
     {
+#if UNITY_EDITOR
         Debug.Log("Dealing Flop...");
+#endif
         yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
         OnUpdateUI?.Invoke();
@@ -330,26 +329,33 @@ public class TexasHoldemManager : MonoBehaviour {
         OnUpdateUI?.Invoke();
         yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
+        OnUpdateUI?.Invoke();
 
-        AwaitAction();
+        if (!isShowdown) AwaitAction();
     }
 
     private IEnumerator DealTurn()
     {
+#if UNITY_EDITOR
         Debug.Log("Dealing Turn...");
+#endif
         yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
+        OnUpdateUI?.Invoke();
 
-        AwaitAction();
+        if (!isShowdown) AwaitAction();
     }
 
     private IEnumerator DealRiver()
     {
+#if UNITY_EDITOR
         Debug.Log("Dealing River...");
+#endif
         yield return new WaitForSeconds(delay);
         communityCards.Add(cardDeck.GetAndRemoveRandomCard());
+        OnUpdateUI?.Invoke();
 
-        AwaitAction();
+        if (!isShowdown) AwaitAction();
     }
 
 
@@ -365,11 +371,12 @@ public class TexasHoldemManager : MonoBehaviour {
         
         // ResetRound();
         phase = Phase.EndRound;
-        AwaitAction();
     }
     
     private void EvaluateHands() {
+#if UNITY_EDITOR
         Debug.Log("Evaluating hands...");
+#endif
 
         // Evaluate the best hand for both players
         foreach (var player in players) {
@@ -403,7 +410,6 @@ public class TexasHoldemManager : MonoBehaviour {
         
         // ResetRound();
         phase = Phase.EndRound;
-        AwaitAction();
     }
     
     private Player DetermineWinner() {
@@ -417,7 +423,9 @@ public class TexasHoldemManager : MonoBehaviour {
             return players[1];
         } else {
             // Handle tie logic (for example, split the pot)
+#if UNITY_EDITOR
             Debug.Log("It's a tie!");
+#endif
             return players[0]; // or players[1], depending on your tie-handling logic
         }
     }
@@ -442,8 +450,10 @@ public class TexasHoldemManager : MonoBehaviour {
     public int GetCurrentPlayerIndex() => currentPlayer;
 
     public void ResetRoom() {
-        players.Clear();
-        pot = 0;
+        foreach (Player p in players) {
+            p.SetStack(STARTING_MONEY);
+        }
+        ResetRound();
     }
 }
 
@@ -499,6 +509,10 @@ public class Player {
 
     public void AddToStack(int amount) {
         stack += amount;
+    }
+
+    public void SetStack(int amount) {
+        stack = amount;
     }
 
     public void AddToBetAmount(int amount) {

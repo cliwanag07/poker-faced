@@ -20,7 +20,9 @@ public class AICaller : MonoBehaviour
         Debug.Log(string.Join(", ", cards));
         Debug.Log(string.Join(", ", suits));
         Debug.Log(ratio);
+#if UNITY_EDITOR
         Debug.Log("Image byte array: " + Convert.ToBase64String(image)); // Print the byte array
+#endif
 
         string url = "http://localhost:8080/compute";
 
@@ -40,23 +42,25 @@ public class AICaller : MonoBehaviour
         form.AddField("suits", suitsListJson);
         form.AddField("ratio", ratio.ToString("F3"));
         form.AddBinaryData("image", image, "image.jpg", "image/jpg");
-
+        
+#if UNITY_EDITOR
         Debug.Log("Cards JSON: " + cardsListJson);
         Debug.Log("Suits JSON: " + suitsListJson);
         Debug.Log("Ratio: " + ratio.ToString("F3"));
+#endif
 
         UnityWebRequest www = UnityWebRequest.Post(url, form);
         yield return www.SendWebRequest();
 
         if (www.result == UnityWebRequest.Result.Success) {
             string jsonResponse = www.downloadHandler.text;
-            Debug.Log(jsonResponse);
             FloatResponse parsed = JsonUtility.FromJson<FloatResponse>(jsonResponse);
-            Debug.Log("Parsed float value: " + parsed.value);
             OnApiResponseReceived?.Invoke(float.Parse(parsed.value.ToString("F3")));
         }
         else {
+#if UNITY_EDITOR
             Debug.LogError("Upload failed: " + www.error);
+#endif
         }
     }
 
