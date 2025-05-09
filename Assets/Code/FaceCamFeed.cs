@@ -7,6 +7,8 @@ public class FaceCamSquareCrop : MonoBehaviour
 
     private WebCamTexture webCamTexture;
     private bool isInitialized = false;
+    
+    public bool IsInitialized() => isInitialized;
 
     private void Start()
     {
@@ -15,7 +17,7 @@ public class FaceCamSquareCrop : MonoBehaviour
         if (devices.Length > 0)
         {
             webCamTexture = new WebCamTexture(devices[0].name, 640, 480, 30); // Set FPS
-            // rawImage.texture = webCamTexture;
+            rawImage.texture = webCamTexture;
             rawImage.material = null;
             webCamTexture.Play();
 

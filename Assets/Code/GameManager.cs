@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour {
@@ -9,11 +11,19 @@ public class GameManager : MonoBehaviour {
     [SerializeField] private FaceCamSquareCrop faceCamSquareCrop;
     [SerializeField] private MrChipsEmojiController emojiController;
     [SerializeField] private AICaller aICaller;
+
+    [SerializeField] private GameObject loadingScreen;
+    [SerializeField] private TextMeshProUGUI loadingText;
     
     private const int PLAYER_INDEX = 0;
     private const int COMPUTER_INDEX = 1;
     private bool showComputerHand = false;
     private bool roundEnd = false;
+    private bool serverConnected = false;
+    private bool cameraDetected = false;
+    
+    [SerializeField] private float minAIResponseDelay = 3f; // minimum delay in seconds
+    [SerializeField] private float maxAIResponseDelay = 11f; // maximum delay in seconds
 
     private float AIResponse;
 
@@ -23,26 +33,98 @@ public class GameManager : MonoBehaviour {
         texasHoldemManager.OnAwaitingNextAction += HandleAwaitingNextAction;
         texasHoldemManager.OnUpdateUI += UpdateUI;
         texasHoldemManager.OnPlayerWin += HandlePlayerWin;
+        aICaller.OnApiResponseReceived += HandleApiResponse;
         
+        StartCoroutine(InitializeGame());
+    }
+    
+    private IEnumerator InitializeGame() {
+        loadingScreen.SetActive(true);
+        loadingText.text = "Waiting for server response...";
+        
+        // Check server connection with timeout
+        yield return StartCoroutine(CheckServerConnection());
+        
+        if (!serverConnected) {
+            loadingText.text = "Server connection failed, see README.txt";
+            yield break;
+        }
+        
+        // Check camera availability
+        yield return StartCoroutine(CheckCamera());
+        
+        if (!cameraDetected) {
+            loadingText.text = "Camera not detected, connect camera and restart";
+            yield break;
+        }
+        
+        // Both server and camera are ready
+        loadingScreen.SetActive(false);
         texasHoldemManager.CreateRoom();
         texasHoldemManager.StartNewRound();
-
-        aICaller.OnApiResponseReceived += HandleApiResponse;
-        UpdateUI();
+    }
+    
+    private IEnumerator CheckServerConnection() 
+    {
+        float timeout = 30f;
+        float elapsedTime = 0f;
+        bool connectionSuccess = false;
+    
+        loadingText.text = "Waiting for server response...";
+    
+        while (elapsedTime < timeout && !connectionSuccess) 
+        {
+            yield return aICaller.PingServer((success) => {
+                connectionSuccess = success;
+            });
+        
+            if (!connectionSuccess) 
+            {
+                elapsedTime += 1f;
+                loadingText.text = $"Waiting for server response... {Mathf.RoundToInt(timeout - elapsedTime)}s remaining";
+                yield return new WaitForSeconds(1f);
+            }
+        }
+    
+        serverConnected = connectionSuccess;
+    
+        if (!serverConnected)
+        {
+            loadingText.text = "Server connection failed, see README.txt";
+        }
+    }
+    
+    private IEnumerator CheckCamera() {
+        // Wait for camera initialization if needed
+        if (faceCamSquareCrop != null) {
+            float timeout = 5f;
+            float elapsedTime = 0f;
+            
+            while (elapsedTime < timeout && !faceCamSquareCrop.IsInitialized()) {
+                elapsedTime += Time.deltaTime;
+                yield return null;
+            }
+            
+            cameraDetected = faceCamSquareCrop.IsInitialized();
+        } else {
+            cameraDetected = false;
+        }
     }
 
     private void Update() {
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            if (texasHoldemManager.Phase == Phase.EndRound) {
-                if (texasHoldemManager.Players[PLAYER_INDEX].GetStack() <= 0 || 
-                    texasHoldemManager.Players[COMPUTER_INDEX].GetStack() <= 0)
-                    texasHoldemManager.ResetRoom();
-                else
-                    texasHoldemManager.ResetRound();
-            }
+        showComputerHand = roundEnd = texasHoldemManager.Phase == Phase.EndRound;
+
+        if (!Input.GetKeyDown(KeyCode.Space)) return;
+        if (texasHoldemManager.Phase != Phase.EndRound) return;
+        if (texasHoldemManager.Players[PLAYER_INDEX].GetStack() <= 0 ||
+            texasHoldemManager.Players[COMPUTER_INDEX].GetStack() <= 0) {
+            texasHoldemManager.ResetRoom();
+            UpdateUI();
+        } else {
+            texasHoldemManager.ResetRound();
+            UpdateUI();
         }
 
-        showComputerHand = roundEnd = texasHoldemManager.Phase == Phase.EndRound;
         // UpdateUI();
     }
 
@@ -77,6 +159,8 @@ public class GameManager : MonoBehaviour {
 #if UNITY_EDITOR
             Debug.Log("Waiting for action from Computer");
 #endif
+            emojiController.SetEmotion(Emotion.Thinking);
+            
             var cardInfo = GetAICardInfo();
             var cards = cardInfo.cardValNumbers;
             Debug.Log(string.Join(", ", cardInfo.cardValNumbers));
@@ -84,8 +168,17 @@ public class GameManager : MonoBehaviour {
             Debug.Log(string.Join(", ", cardInfo.cardSuits));
             var ratio = cardInfo.computerChipsToUserRatio;
             
-            aICaller.GetAIResponse(cards, suits, ratio, GetWebCamImage());
+            StartCoroutine(HandleAIDelay(cards, suits, ratio));
         }
+    }
+    
+    private IEnumerator HandleAIDelay(List<int> cards, List<string> suits, double ratio) {
+        // wait for a random delay between min and max time
+        float delay = UnityEngine.Random.Range(minAIResponseDelay, maxAIResponseDelay);
+        yield return new WaitForSeconds(delay);
+
+        // proceed to get AI response after the delay
+        aICaller.GetAIResponse(cards, suits, ratio, GetWebCamImage());
     }
     
     private void HandleApiResponse(float response) {

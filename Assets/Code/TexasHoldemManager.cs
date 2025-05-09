@@ -371,6 +371,7 @@ public class TexasHoldemManager : MonoBehaviour {
         
         // ResetRound();
         phase = Phase.EndRound;
+        OnUpdateUI?.Invoke();
     }
     
     private void EvaluateHands() {
@@ -410,6 +411,7 @@ public class TexasHoldemManager : MonoBehaviour {
         
         // ResetRound();
         phase = Phase.EndRound;
+        OnUpdateUI?.Invoke();
     }
     
     private Player DetermineWinner() {

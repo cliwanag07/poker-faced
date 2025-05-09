@@ -12,6 +12,17 @@ public class AICaller : MonoBehaviour
 
     void Update() { }
     
+    public IEnumerator PingServer(Action<bool> onComplete = null, string url = "http://localhost:8080/test")
+    {
+        using (UnityWebRequest www = UnityWebRequest.Get(url))
+        {
+            yield return www.SendWebRequest();
+
+            bool success = www.result == UnityWebRequest.Result.Success;
+            onComplete?.Invoke(success);
+        }
+    }
+    
     public void GetAIResponse(List<int> cards, List<string> suits, double ratio, byte[] image) {
         StartCoroutine(GetAIResponseIEnumerator(cards, suits, ratio, image));
     }
@@ -54,7 +65,9 @@ public class AICaller : MonoBehaviour
 
         if (www.result == UnityWebRequest.Result.Success) {
             string jsonResponse = www.downloadHandler.text;
+            Debug.Log(jsonResponse);
             FloatResponse parsed = JsonUtility.FromJson<FloatResponse>(jsonResponse);
+            Debug.Log(parsed.value);
             OnApiResponseReceived?.Invoke(float.Parse(parsed.value.ToString("F3")));
         }
         else {
