@@ -4457,6 +4457,8 @@ MonoBehaviour:
   aICaller: {fileID: 1255101669}
   loadingScreen: {fileID: 253017624}
   loadingText: {fileID: 1834953157}
+  minAIResponseDelay: 3
+  maxAIResponseDelay: 11
 --- !u!4 &1255101667
 Transform:
   m_ObjectHideFlags: 0
@@ -6938,8 +6940,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 25
-  m_fontSizeBase: 25
+  m_fontSize: 40
+  m_fontSizeBase: 40
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

@@ -1,9 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using TMPro;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 public class GameManager : MonoBehaviour {
     [SerializeField] private TexasHoldemUIManager texasHoldemUIManager;
@@ -14,6 +15,8 @@ public class GameManager : MonoBehaviour {
 
     [SerializeField] private GameObject loadingScreen;
     [SerializeField] private TextMeshProUGUI loadingText;
+
+    private Process serverProcess;
     
     private const int PLAYER_INDEX = 0;
     private const int COMPUTER_INDEX = 1;
@@ -23,11 +26,13 @@ public class GameManager : MonoBehaviour {
     private bool cameraDetected = false;
     
     [SerializeField] private float minAIResponseDelay = 3f; // minimum delay in seconds
-    [SerializeField] private float maxAIResponseDelay = 11f; // maximum delay in seconds
+    [SerializeField] private float maxAIResponseDelay = 7f; // maximum delay in seconds
 
     private float AIResponse;
 
     private void Start() {
+        StartNewProcess();
+        
         texasHoldemUIManager.OnPlayerAction += HandlePlayerAction;
         
         texasHoldemManager.OnAwaitingNextAction += HandleAwaitingNextAction;
@@ -36,6 +41,25 @@ public class GameManager : MonoBehaviour {
         aICaller.OnApiResponseReceived += HandleApiResponse;
         
         StartCoroutine(InitializeGame());
+    }
+    
+    private void StartNewProcess() {
+        // If the batch process exists and is running, do nothing
+        if (serverProcess != null && !serverProcess.HasExited)
+        {
+            return; // Process is already running, so no need to start a new one
+        }
+
+        // Otherwise, start a new batch process
+        serverProcess = new Process();
+        serverProcess.StartInfo.FileName = "start_server_win.bat";
+        serverProcess.Start();
+    }
+    
+    private void OnApplicationQuit() {
+        if (serverProcess is not { HasExited: false }) return;
+        serverProcess.Kill(); // terminate the process
+        serverProcess.WaitForExit();
     }
     
     private IEnumerator InitializeGame() {
@@ -112,8 +136,15 @@ public class GameManager : MonoBehaviour {
     }
 
     private void Update() {
+        if (Input.GetKeyDown(KeyCode.Escape)) {
+            Application.Quit();
+        }
+        
         showComputerHand = roundEnd = texasHoldemManager.Phase == Phase.EndRound;
-
+        if (showComputerHand) {
+            UpdateUI();
+        }
+        
         if (!Input.GetKeyDown(KeyCode.Space)) return;
         if (texasHoldemManager.Phase != Phase.EndRound) return;
         if (texasHoldemManager.Players[PLAYER_INDEX].GetStack() <= 0 ||
@@ -125,7 +156,6 @@ public class GameManager : MonoBehaviour {
             UpdateUI();
         }
 
-        // UpdateUI();
     }
 
     private void HandlePlayerWin(int playerIndex) {
